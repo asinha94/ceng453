@@ -32,11 +32,6 @@ typedef struct bodiesList {
  Helper Functions
 /************************************************/
 
-Vector fillVector(double x, double y, double z) {
-    Vector v = {x,y,z};
-    return v;
-}
-
 void freeBodies(Bodies * bodies) {
     for (int i = 0; i < bodies->size; i++) {
         Body * b = bodies->array[i];
@@ -63,8 +58,8 @@ Bodies * getInitialBodies(const char * filename) {
         int ret = fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf ", &x, &y, &z, &mass, &vx, &vy, &vz);
         if(ret == 7) {
             Body * b = malloc(sizeof(Body));
-            b->position = fillVector(x,y,z);
-            b->velocity = fillVector(vx, vy, vz);
+            b->position = (Vector){x,y,z};
+            b->velocity = (Vector){vx, vy, vz};
             b->mass = mass;
             bodies->array[i++] = b;
         } else if(ret == EOF) {
@@ -121,7 +116,7 @@ int main(int argc, char **argv) {
     int delta = 1; 
 
     for (int i = 0; i < totalTime; i += delta) {
-        
+
     }
 
     for (int i = 0; i < bodies->size; i ++) {
