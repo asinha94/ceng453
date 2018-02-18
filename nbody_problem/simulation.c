@@ -143,7 +143,7 @@ Vector getNewVelocity(Vector * acceleration, Vector * old_velocity, double delta
 /************************************************/
 
 int main(int argc, char **argv) {
-    Bodies * bodies = getInitialBodies("examples/nbody_initial_new.txt");
+    Bodies * bodies = getInitialBodies("nbody_initial.txt");
 
     // ALL Times are in ms
     int totalTime = 50000000;
