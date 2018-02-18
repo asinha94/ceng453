@@ -108,9 +108,9 @@ Vector getForces(Body * exerted_on, Body * exerted_from) {
         return v;
     }
     
-    double force = NewtonsLaw(exerted_on->mass, exerted_from->mass, distance);
 
-    // Use Newtons Law of Gravitation and figure out direction
+    // Use Newtons Law of Gravitation and multiply by direction unit vector
+    double force = NewtonsLaw(exerted_on->mass, exerted_from->mass, distance);
     v.x = force * (rx / distance);
     v.y = force * (ry / distance);
     v.z = force * (rz / distance);
