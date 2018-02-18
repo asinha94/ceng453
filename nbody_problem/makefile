@@ -1,6 +1,5 @@
-
-build:
-	gcc simulation.c -o simulation
+build: clean
+	gcc simulation.c -o simulation -lm
 
 clean:
-	rm -f a.out simulation
+	rm -f simulation

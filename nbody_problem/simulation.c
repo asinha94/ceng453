@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <unistd.h>
 
 /************************************************
  Macros
@@ -89,35 +91,37 @@ void printPositions(Body * b) {
 
 double isNegative (double num) {
     if (num < 0) {
-        return (double)-1;
+        return (double) -1;
     }
     return (double) 1;
 }
 
-double NewtonsLaw(double m1, double m2, double radius) {
-    if (radius <= 1000) {
-        return 0;
-    }
-    return ((G * m1 * m2) / Squared(radius));
+double NewtonsLaw(double m1, double m2, double distance) {
+    return ((G * m1 * m2) / Squared(distance));
 }
 
 
 Vector getForces(Body * exerted_on, Body * exerted_from) {
-    Vector v = {0,0,0};
-    double m1 = exerted_on->mass;
-    double m2 = exerted_from->mass;
-
-    // Get x component
+    Vector v = (Vector) {0.0, 0.0, 0.0};
+    
+    // Get distance in each component
     double rx = exerted_from->position.x - exerted_on->position.x;
-    v.x = NewtonsLaw(m1, m2, rx) * isNegative(rx);
-
-    // y component
     double ry = exerted_from->position.y - exerted_on->position.y;
-    v.y = NewtonsLaw(m1, m2, ry) * isNegative(ry);
-
-    // z component
     double rz = exerted_from->position.z - exerted_on->position.z;
-    v.z = NewtonsLaw(m1, m2, rz) * isNegative(rz);
+
+    // If distance is < 1000m then force is zero
+    
+    double distance = sqrt(Squared(rx) + Squared(ry) + Squared(rz));
+    if (distance <= 1000.0) {
+        return v;
+    }
+    
+    double force = NewtonsLaw(exerted_on->mass, exerted_from->mass, distance);
+
+    // Use Newtons Law of Gravitation and figure out direction
+    v.x = force * (rx / distance);
+    v.y = force * (ry / distance);
+    v.z = force * (rz / distance);
 
     return v;
 }
@@ -141,6 +145,13 @@ Vector findNewVelocity(Vector * old_pos, Vector * new_pos, double delta_time) {
     return new_velocity;
 }
 
+Vector getNewVelocity(Vector * acceleration, double delta_time) {
+    Vector new_velocity;
+    new_velocity.x = acceleration->x * delta_time;
+    new_velocity.y = acceleration->y * delta_time;
+    new_velocity.z = acceleration->z * delta_time;
+    return new_velocity;
+}
 
 
 /************************************************
@@ -151,8 +162,8 @@ int main(int argc, char **argv) {
     Bodies * bodies = getInitialBodies("examples/nbody_initial_new.txt");
 
     // ALL Times are in ms
-    int totalTime = 50000; // in seconds
-    int delta_time = 1; // in  
+    int totalTime = 50000000; // in ms
+    int delta_time = 100; // in ms
 
     for (int i = 0; i < totalTime; i += delta_time) {
         // The new positions/velocities in the struct cant be updated 
@@ -163,7 +174,7 @@ int main(int argc, char **argv) {
         for (int j = 0; j < bodies->size; j++) {
 
             // get all the Forces to find net acceleration
-            Vector net_forces = (Vector) {0,0,0};
+            Vector net_forces = (Vector) {0.0,0.0,0.0};
             for (int k = 0; k < bodies->size; k++) {
                 if (k == j) {
                     continue;
@@ -173,19 +184,23 @@ int main(int argc, char **argv) {
                 net_forces.y += f.y;
                 net_forces.z += f.z;
             }
+ 
             Vector acc;
             acc.x = net_forces.x / bodies->array[j]->mass;
+            acc.y = net_forces.y / bodies->array[j]->mass;
+            acc.z = net_forces.z / bodies->array[j]->mass;
 
             // Get new positions
-            new_positions[j] = getNewPosition(bodies->array[j], &acc, (double) (delta_time/10));
-            new_velocity[j] = findNewVelocity(&bodies->array[j]->position, &new_positions[j], (double) delta_time);
+            new_positions[j] = getNewPosition(bodies->array[j], &acc, ((double) delta_time)/1000);
+            new_velocity[j] = findNewVelocity(&bodies->array[j]->position, &new_positions[j], ((double) delta_time)/1000);
+            //new_velocity[j] = getNewVelocity(&acc, (double) (delta_time)/1000);
         }
 
         for (int m = 0; m < bodies->size; m++) {
             updateVector(&bodies->array[m]->position, &new_positions[m]);
             updateVector(&bodies->array[m]->velocity, &new_velocity[m]);
+            
         }
-        // Print here for every iteration
     }
 
     for (int n = 0; n < bodies->size; n++) {
