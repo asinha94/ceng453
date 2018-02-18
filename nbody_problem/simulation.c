@@ -6,6 +6,7 @@
 /************************************************/
 
 #define G 6.67408e-11
+#define Squared(x) ((x) * (x))
 #define NewtonsLaw(G,mi,mj,r) ( ((G) * (mi) * (mj)) / ( (r) * (r) ) )
 
 
@@ -74,6 +75,12 @@ Bodies * getInitialBodies(const char * filename) {
     return bodies;
 }
 
+void updateVector(Vector * s, Vector *d) {
+    s->x = d->x;
+    s->y = d->y;
+    s->z = d->z;
+}
+
 /************************************************
  Math Functions
 /************************************************/
@@ -86,25 +93,46 @@ double isNegative (double num) {
 }
 
 
-Vector getAcceleration(Body * exerted_on, Body * exerted_from) {
+Vector getForces(Body * exerted_on, Body * exerted_from) {
     Vector v = {0,0,0};
     double m1 = exerted_on->mass;
     double m2 = exerted_from->mass;
 
     // Get x component
     double rx = exerted_from->position.x - exerted_on->position.x;
-    v.x = (NewtonsLaw(G, m1, m2, rx) * isNegative(rx)) / m1;
+    v.x = NewtonsLaw(G, m1, m2, rx) * isNegative(rx);
 
     // y component
     double ry = exerted_from->position.y - exerted_on->position.y;
-    v.y = (NewtonsLaw(G, m1, m2, ry) * isNegative(ry)) / m1;
+    v.y = NewtonsLaw(G, m1, m2, ry) * isNegative(ry);
 
     // z component
     double rz = exerted_from->position.z - exerted_on->position.z;
-    v.z = (NewtonsLaw(G, m1, m2, rz) * isNegative(rz)) / m1;
+    v.z = NewtonsLaw(G, m1, m2, rz) * isNegative(rz);
 
     return v;
 }
+
+Vector getNewPosition(Body * b, Vector * a, double delta_time) {
+    Vector new_position;
+    Vector v = b->velocity;
+    Vector s = b->position;
+
+    new_position.x = s.x + (delta_time * v.x) + (0.5 * a->x * Squared(delta_time));
+    new_position.y = s.y + (delta_time * v.y) + (0.5 * a->y * Squared(delta_time));
+    new_position.z = s.z + (delta_time * v.z) + (0.5 * a->z * Squared(delta_time));
+    return new_position;
+}
+
+Vector findNewVelocity(Vector * old_pos, Vector * new_pos, double delta_time) {
+    Vector new_velocity;
+    new_velocity.x = (new_pos->x - old_pos->x) / delta_time;
+    new_velocity.y = (new_pos->y - old_pos->y) / delta_time;
+    new_velocity.z = (new_pos->z - old_pos->z) / delta_time;
+    return new_velocity;
+}
+
+
 
 /************************************************
  Main
@@ -112,19 +140,48 @@ Vector getAcceleration(Body * exerted_on, Body * exerted_from) {
 
 int main(int argc, char **argv) {
     Bodies * bodies = getInitialBodies("nbody_initial.txt");
+
+    // ALL Times are in ms
     int totalTime = 500000; // in seconds
-    int delta = 1; 
+    int delta_time = 1; // in  
 
-    for (int i = 0; i < totalTime; i += delta) {
+    for (int i = 0; i < totalTime; i += delta_time) {
+        // The new positions/velocities in the struct cant be updated 
+        // till all the calculations are done with the old balues.
+        // So hold it in the array till all the iterations are complete
+        Vector new_positions[bodies->size];
+        Vector new_velocity[bodies->size];
+        for (int j = 0; j < bodies->size; j++) {
+
+            // get all the Forces to find net acceleration
+            Vector net_forces = (Vector) {0,0,0};
+            for (int k = 0; k < bodies->size; k++) {
+                if (k == j) {
+                    continue;
+                }
+                Vector f = getForces(bodies->array[j], bodies->array[k]);
+                net_forces.x += f.x;
+                net_forces.y += f.y;
+                net_forces.z += f.z;
+            }
+            Vector acc;
+            acc.x = net_forces.x / bodies->array[j]->mass;
+
+            // Get new positions
+            new_positions[j] = getNewPosition(bodies->array[j], &acc, (double) delta_time);
+            new_velocity[j] = findNewVelocity(&bodies->array[j]->position, &new_positions[j], (double) delta_time);
+        }
+
+        for (int m = 0; m < bodies->size; m++) {
+            updateVector(&bodies->array[m]->position, &new_positions[m]);
+            updateVector(&bodies->array[m]->velocity, &new_velocity[m]);
+        }
+    }
+
+    for (int n = 0; n < bodies->size; n++) {
 
     }
 
-    for (int i = 0; i < bodies->size; i ++) {
-        Body * b = bodies->array[i]; 
-        printf("%d: %f %f %f\n", i, b->position.x, b->position.y, b->position.z);
-    }
-    
-
-    freeBodies(bodies);
+    freeBodies(bodies); // pun intended
     return 0;
 }
