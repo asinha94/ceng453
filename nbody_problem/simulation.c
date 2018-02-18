@@ -89,13 +89,6 @@ void printPositions(Body * b) {
  Math Functions
 /************************************************/
 
-double isNegative (double num) {
-    if (num < 0) {
-        return (double) -1;
-    }
-    return (double) 1;
-}
-
 double NewtonsLaw(double m1, double m2, double distance) {
     return ((G * m1 * m2) / Squared(distance));
 }
@@ -110,7 +103,6 @@ Vector getForces(Body * exerted_on, Body * exerted_from) {
     double rz = exerted_from->position.z - exerted_on->position.z;
 
     // If distance is < 1000m then force is zero
-    
     double distance = sqrt(Squared(rx) + Squared(ry) + Squared(rz));
     if (distance <= 1000.0) {
         return v;
@@ -137,19 +129,11 @@ Vector getNewPosition(Body * b, Vector * a, double delta_time) {
     return new_position;
 }
 
-Vector findNewVelocity(Vector * old_pos, Vector * new_pos, double delta_time) {
+Vector getNewVelocity(Vector * acceleration, Vector * old_velocity, double delta_time) {
     Vector new_velocity;
-    new_velocity.x = (new_pos->x - old_pos->x) / delta_time;
-    new_velocity.y = (new_pos->y - old_pos->y) / delta_time;
-    new_velocity.z = (new_pos->z - old_pos->z) / delta_time;
-    return new_velocity;
-}
-
-Vector getNewVelocity(Vector * acceleration, double delta_time) {
-    Vector new_velocity;
-    new_velocity.x = acceleration->x * delta_time;
-    new_velocity.y = acceleration->y * delta_time;
-    new_velocity.z = acceleration->z * delta_time;
+    new_velocity.x = old_velocity->x + (acceleration->x * delta_time);
+    new_velocity.y = old_velocity->y + (acceleration->y * delta_time);
+    new_velocity.z = old_velocity->z + (acceleration->z * delta_time);
     return new_velocity;
 }
 
@@ -162,12 +146,12 @@ int main(int argc, char **argv) {
     Bodies * bodies = getInitialBodies("examples/nbody_initial_new.txt");
 
     // ALL Times are in ms
-    int totalTime = 50000000; // in ms
-    int delta_time = 100; // in ms
+    int totalTime = 50000000;
+    int delta_time = 50;
 
     for (int i = 0; i < totalTime; i += delta_time) {
         // The new positions/velocities in the struct cant be updated 
-        // till all the calculations are done with the old balues.
+        // till all the calculations are done with the old values.
         // So hold it in the array till all the iterations are complete
         Vector new_positions[bodies->size];
         Vector new_velocity[bodies->size];
@@ -179,7 +163,7 @@ int main(int argc, char **argv) {
                 if (k == j) {
                     continue;
                 }
-                Vector f = getForces(bodies->array[j], bodies->array[k]);
+                Vector f = getForces(bodies->array[j], bodies->array[k]);                
                 net_forces.x += f.x;
                 net_forces.y += f.y;
                 net_forces.z += f.z;
@@ -192,8 +176,7 @@ int main(int argc, char **argv) {
 
             // Get new positions
             new_positions[j] = getNewPosition(bodies->array[j], &acc, ((double) delta_time)/1000);
-            new_velocity[j] = findNewVelocity(&bodies->array[j]->position, &new_positions[j], ((double) delta_time)/1000);
-            //new_velocity[j] = getNewVelocity(&acc, (double) (delta_time)/1000);
+            new_velocity[j] = getNewVelocity(&acc, &bodies->array[j]->velocity, ((double) delta_time)/1000);
         }
 
         for (int m = 0; m < bodies->size; m++) {
