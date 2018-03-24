@@ -10,4 +10,4 @@ N=$2
 
 make build
 
-qsub -q cluster-short -1 nodes=1:ppn="$CPUS" "./batch_sieve.sh $CPUS $N"
+qsub -q cluster-short -1 nodes=1:ppn="$CPUS" ./batch_sieve.sh -F "$CPUS $N"
