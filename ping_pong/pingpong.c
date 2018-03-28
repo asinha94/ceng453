@@ -21,7 +21,6 @@ int main(int argc, char ** argv) {
         exit (1);
    }
 
-
     if (!id) {
         size = atoi(argv[1]);
         pingpong = (int *) malloc(size);
